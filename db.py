@@ -41,12 +41,24 @@ class RSMPDocument(Base):
 
     id = Column(Integer, primary_key=True)
     file_id = Column(Integer, ForeignKey('rsmp_files.id'))
+    file = relationship('RSMPFile')
     doc_id = Column(String(36))
     doc_create_date = Column(Date)
     msp_input_date = Column(Date)
     subj_type = Column(String(1))
     subj_cat = Column(String(1))
     novelity = Column(String(1))
+    """
+    Сведения о месте нахождения юридического лица / месте жительства индивидуального предпринимателя
+    """
+    region_id = Column(Integer, ForeignKey('rsmp_region.id'))
+    region = relationship('Region')
+    district_id = Column(Integer, ForeignKey('rsmp_district.id'))
+    district = relationship('District')
+    city_id = Column(Integer, ForeignKey('rsmp_city.id'))
+    city = relationship('City')
+    locality_id = Column(Integer, ForeignKey('rsmp_locality.id'))
+    locality = relationship('Locality')
 
     # many to many RSMPDocument <-> OKVED
     extra_okved = relationship('OKVED', secondary=extra_okveds, back_populates='docs')
@@ -61,6 +73,7 @@ class LegalEntity(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
+    doc = relationship('RSMPDocument')
     org_full_name = Column(String(1000))
     org_short_name = Column(String(500))
     org_inn = Column(String(10))
@@ -75,6 +88,7 @@ class IndividualEnterpeneur(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
+    doc = relationship('RSMPDocument')
     ip_name = Column(String(60))
     ip_surname = Column(String(60))
     ip_middlename = Column(String(60))
@@ -93,30 +107,37 @@ class Region(Base):
     name = Column(String(255))
 
 
-class Address(Base):
+class District(Base):
     """
-    Таблица адресов (районов, городов и населенных пунктов)
+    Таблица районов
     """
-    __tablename__ = 'rsmp_address'
+    __tablename__ = 'rsmp_district'
 
     id = Column(Integer, primary_key=True)
     type = Column(String(50))
     name = Column(String(255))
 
 
-class Location(Base):
+class City(Base):
     """
-    Сведения о месте нахождения юридического лица / месте жительства индивидуального предпринимателя
+    Таблица городов
     """
-    __tablename__ = 'rsmp_location'
+    __tablename__ = 'rsmp_city'
+
     id = Column(Integer, primary_key=True)
+    type = Column(String(50))
+    name = Column(String(255))
 
-    doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
 
-    region_id = Column(Integer, ForeignKey('rsmp_region.id'))
-    district_id = Column(Integer, ForeignKey('rsmp_address.id'))
-    city_id = Column(Integer, ForeignKey('rsmp_address.id'))
-    locality_id = Column(Integer, ForeignKey('rsmp_address.id'))
+class Locality(Base):
+    """
+    Таблица населенных пунктов
+    """
+    __tablename__ = 'rsmp_locality'
+
+    id = Column(Integer, primary_key=True)
+    type = Column(String(50))
+    name = Column(String(255))
 
 
 class OKVED(Base):
@@ -148,12 +169,11 @@ class License(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
+    doc = relationship('RSMPDocument')
 
     lic_series = Column(String(10))
     lic_activity = Column(JSON)
-    # lic_activity = Column(String(1000))
     lic_address = Column(JSON)
-    # lic_address = Column(String(500))
     lic_num = Column(String(100))
     lic_type = Column(String(10))
     lic_date = Column(Date)
@@ -174,6 +194,7 @@ class Production(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
+    doc = relationship('RSMPDocument')
 
     prod_code = Column(String(18))
     prod_name = Column(String(1000))
@@ -190,6 +211,7 @@ class Partnership(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
+    doc = relationship('RSMPDocument')
 
     partner_name = Column(String(1000))
     partner_inn = Column(String(10))
@@ -208,6 +230,7 @@ class Contract(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
+    doc = relationship('RSMPDocument')
 
     contract_client_name = Column(String(1000))
     contract_client_inn = Column(String(10))
@@ -227,6 +250,7 @@ class Agreement(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
+    doc = relationship('RSMPDocument')
 
     dog_client_name = Column(String(1000))
     dog_client_inn = Column(String(10))
