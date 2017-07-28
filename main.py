@@ -1,3 +1,4 @@
+import datetime
 import re
 import urllib.request
 import xmltodict
@@ -7,7 +8,7 @@ from bs4 import BeautifulSoup as BS
 from db import *
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy_utils import database_exists, create_database
+from sqlalchemy_utils import database_exists, create_database, drop_database
 
 MAIN_URL = 'https://www.nalog.ru/opendata/7707329152-rsmp/'
 NEED_TO_DOWNLOAD = False
@@ -47,45 +48,33 @@ def get_or_create(session, model, **kwargs):
         return instance
 
 
-def download_xds():
-    """
-    Скачивание файла со структурой
-    """
-    # TODO убрать хардкод
-    xsd_url = 'https://www.nalog.ru/opendata/7707329152-rsmp/structure-08012016.xsd'
-    xsd_file_name = 'structure-08012016.xsd'
-    xsd_actual_file = urllib.request.URLopener()
-    xsd_actual_file.retrieve(xsd_url, xsd_file_name)
+def date_transform(str):
+    if not str:
+        return None
+    else:
+        return datetime.datetime.strptime(str, '%d.%m.%Y')
 
 
-def get_or_create_extra_okved(session, data, doc_id):
+def get_or_create_extra_okved(session, data, doc_id, orm_doc):
     okved_code = data.get('@КодОКВЭД', None)
     okved_name = data.get('@НаимОКВЭД', None)
     okved_ver = data.get('@ВерсОКВЭД', None)
     okved = get_or_create(session, OKVED, doc_id=doc_id, okved_code=okved_code, okved_name=okved_name,
                           okved_ver=okved_ver)
-    # wendy = session.query(User).filter_by(name='wendy').one()
-    # post = BlogPost("Wendy's Blog Post", "This is a test", wendy)
-    # session.add(post)
-    # # We are storing keywords uniquely in the database, but we know that we don’t have any yet, so we can just create them:
-    # post.keywords.append(Keyword('wendy'))
-    # post.keywords.append(Keyword('firstpost'))
-    okved.docs.append(RSMPDocument(doc_id=doc_id))
-    # get_or_create(session, extra_okveds, doc_id=doc_id, okved_id=okved.id)
+    okved.docs.append(orm_doc)
 
 
 def get_or_create_license(session, data, doc_id):
-    print(data)
     lic_series = data.get('@СерЛиценз', None)
     lic_activity = data.get('НаимЛицВД', None)
     lic_address = data.get('СведАдрЛицВД', None)
     lic_num = data.get('@НомЛиценз', None)
     lic_type = data.get('@ВидЛиценз', None)
-    lic_date = data.get('ДатаЛиценз', None)
-    lic_start_date = data.get('ДатаНачЛиценз', None)
-    lic_end_date = data.get('ДатаКонЛиценз', None)
+    lic_date = date_transform(data.get('ДатаЛиценз', None))
+    lic_start_date = date_transform(data.get('ДатаНачЛиценз', None))
+    lic_end_date = date_transform(data.get('ДатаКонЛиценз', None))
     licensor = data.get('@ОргВыдЛиценз', None)
-    lic_stop_date = data.get('ДатаОстЛиценз', None)
+    lic_stop_date = date_transform(data.get('ДатаОстЛиценз', None))
     org_stoped_lic = data.get('@ОргОстЛиценз', None)
 
     get_or_create(session, License, doc_id=doc_id, lic_series=lic_series, lic_activity=lic_activity,
@@ -106,7 +95,7 @@ def get_or_create_partnership(session, data, doc_id):
     partner_name = data.get('@НаимЮЛ_ПП', None)
     partner_inn = data.get('@ИННЮЛ_ПП', None)
     partner_contract_num = data.get('@НомДог', None)
-    partner_contract_date = data.get('@ДатаДог', None)
+    partner_contract_date = date_transform(data.get('@ДатаДог', None))
 
     get_or_create(session, Partnership, doc_id=doc_id, partner_name=partner_name, partner_inn=partner_inn,
                   partner_contract_num=partner_contract_num, partner_contract_date=partner_contract_date)
@@ -117,7 +106,7 @@ def get_or_create_contract(session, data, doc_id):
     contract_client_inn = data.get('@ИННЮЛ_ЗК', None)
     contract_subj = data.get('@ПредмКонтр', None)
     contract_num = data.get('@НомКонтрРеестр', None)
-    contract_date = data.get('@ДатаКонтр', None)
+    contract_date = date_transform(data.get('@ДатаКонтр', None))
 
     get_or_create(session, Contract, doc_id=doc_id, contract_client_name=contract_client_name,
                   contract_client_inn=contract_client_inn, contract_subj=contract_subj,
@@ -129,7 +118,7 @@ def get_or_create_agreement(session, data, doc_id):
     dog_client_inn = data.get('@ИННЮЛ_ЗД', None)
     dog_subj = data.get('@ПредмДог', None)
     dog_num = data.get('@НомДогРеестр', None)
-    dog_date = data.get('@ДатаДог', None)
+    dog_date = date_transform(data.get('@ДатаДог', None))
 
     get_or_create(session, Agreement, doc_id=doc_id, dog_client_name=dog_client_name, dog_client_inn=dog_client_inn,
                   dog_subj=dog_subj, dog_num=dog_num, dog_date=dog_date)
@@ -137,7 +126,9 @@ def get_or_create_agreement(session, data, doc_id):
 
 if __name__ == "__main__":
     # коннектимся к базе, если ее нет - создаем
-    engine = create_engine('mysql+pymysql://root:qwerty12345@localhost/rsmp?charset=cp1251&use_unicode=0')
+    engine = create_engine('mysql://root:qwerty12345@localhost/rsmp?charset=cp1251&use_unicode=0')
+    if database_exists(engine.url):
+        drop_database(engine.url)
     if not database_exists(engine.url):
         create_database(engine.url)
         # создаем таблицы
@@ -186,8 +177,8 @@ if __name__ == "__main__":
             Состав и структура документ
             """
             doc_id = doc['@ИдДок']
-            doc_create_date = doc.get('@ДатаСост', None)
-            msp_input_date = doc.get('@ДатаВклМСП', None)
+            doc_create_date = date_transform(doc.get('@ДатаСост', None))
+            msp_input_date = date_transform(doc.get('@ДатаВклМСП', None))
             subj_type = doc.get('@ВидСубМСП', None)
             subj_cat = doc.get('@КатСубМСП', None)
             novelity = doc.get('@ПризНовМСП', None)
@@ -257,9 +248,9 @@ if __name__ == "__main__":
                 dop_okved = doc['СвОКВЭД'].get('СвОКВЭДДоп', [])
                 if isinstance(dop_okved, list):
                     for item in dop_okved:
-                        get_or_create_extra_okved(session=session, data=item, doc_id=doc_id)
+                        get_or_create_extra_okved(session=session, data=item, doc_id=doc_id, orm_doc=orm_doc)
                 else:
-                    get_or_create_extra_okved(session=session, data=dop_okved, doc_id=doc_id)
+                    get_or_create_extra_okved(session=session, data=dop_okved, doc_id=doc_id, orm_doc=orm_doc)
 
             """
             Сведения о лицензиях, выданных субъекту МСП
@@ -319,9 +310,7 @@ if __name__ == "__main__":
                     get_or_create_agreement(session=session, data=doc['СвДог'], doc_id=doc_id)
 
         xml_file.close()
-        print(i)
-        i += 1
-        if i == 4:
-            break
+        print('end')
+        break
 
     session.commit()
