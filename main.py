@@ -42,7 +42,6 @@ def get_or_create(session, model, **kwargs):
     if not instance:
         instance = model(**kwargs)
         session.add(instance)
-        # session.commit()
     return instance
 
 
@@ -57,9 +56,8 @@ def get_or_create_extra_okved(session, data, doc):
     okved_code = data.get('@КодОКВЭД', None)
     okved_name = data.get('@НаимОКВЭД', None)
     okved_ver = data.get('@ВерсОКВЭД', None)
-    okved = get_or_create(session, OKVED, doc=doc, okved_code=okved_code, okved_name=okved_name,
-                          okved_ver=okved_ver)
-    okved.docs.append(doc)
+    extra_okved = get_or_create(session, OKVED, okved_code=okved_code, okved_name=okved_name, okved_ver=okved_ver)
+    extra_okved.docs.append(doc)
 
 
 def get_or_create_license(session, data, doc):
@@ -147,9 +145,7 @@ if __name__ == "__main__":
         dict_data = xmltodict.parse(data)
         file_content = dict_data['Файл']
 
-        """
-        Сведения о файле и отправителе
-        """
+        # Сведения о файле и отправителе
         file_id = file_content['@ИдФайл']
         file_format_ver = file_content.get('@ВерсФорм', None)
         info_type = file_content.get('@ТипИнф', None)
@@ -171,9 +167,7 @@ if __name__ == "__main__":
                                  sender_tel=sender_tel, sender_email=sender_email)
 
         for doc in file_content['Документ']:
-            """
-            Состав и структура документ
-            """
+            # Состав и структура документ
             doc_id = doc['@ИдДок']
             doc_create_date = date_transform(doc.get('@ДатаСост', None))
             msp_input_date = date_transform(doc.get('@ДатаВклМСП', None))
@@ -184,10 +178,7 @@ if __name__ == "__main__":
             orm_doc = get_or_create(session, RSMPDocument, file=orm_file, doc_id=doc_id,
                                     doc_create_date=doc_create_date, msp_input_date=msp_input_date, subj_type=subj_type,
                                     subj_cat=subj_cat, novelity=novelity)
-            # session.commit()
-            """
-            Сведения о юридическом/индивидуальном предпринимателе лице, включенном в реестр МСП
-            """
+            # Сведения о юридическом/индивидуальном предпринимателе лице, включенном в реестр МСП
             if 'ОргВклМСП' in doc and doc['ОргВклМСП']:
                 org_full_name = doc['ОргВклМСП'].get('@НаимОрг', None)
                 org_short_name = doc['ОргВклМСП'].get('НаимОргСокр', None)
@@ -205,9 +196,7 @@ if __name__ == "__main__":
                 ie = get_or_create(session, IndividualEnterpeneur, doc=orm_doc, ip_name=ip_name, ip_surname=ip_surname,
                                    ip_middlename=ip_middlename, ip_inn=ip_inn)
 
-            """
-            Сведения о месте нахождения юридического лица / месте жительства индивидуального предпринимателя
-            """
+            # Сведения о месте нахождения юридического лица / месте жительства индивидуального предпринимателя
             if 'СведМН' in doc and doc['СведМН']:
 
                 region = doc['СведМН'].get('@КодРегион', None)
@@ -235,30 +224,25 @@ if __name__ == "__main__":
                     locality = get_or_create(session, Locality, type=locality_type, name=locality_name)
                     orm_doc.locality = locality
 
-            """
-            Сведения о видах экономической деятельности
-            по Общероссийскому классификатору видов экономической деятельности
-            """
+            # Сведения о видах экономической деятельности
+            # по Общероссийскому классификатору видов экономической деятельности
             if 'СвОКВЭД' in doc and doc['СвОКВЭД']:
                 okved_main_code = doc['СвОКВЭД'].get('СвОКВЭДОсн', {}).get('@КодОКВЭД', None)
                 okved_main_name = doc['СвОКВЭД'].get('СвОКВЭДОсн', {}).get('@НаимОКВЭД', None)
                 okved_main_ver = doc['СвОКВЭД'].get('СвОКВЭДОсн', {}).get('@ВерсОКВЭД', None)
 
-                # get_or_create(session, OKVED, doc=orm_doc, okved_code=okved_main_code, okved_name=okved_main_name,
-                #               okved_ver=okved_main_ver)
+                main_okved = get_or_create(session, OKVED, okved_code=okved_main_code, okved_name=okved_main_name,
+                                           okved_ver=okved_main_ver)
+                orm_doc.main_okved = main_okved
 
                 dop_okved = doc['СвОКВЭД'].get('СвОКВЭДДоп', [])
                 if isinstance(dop_okved, list):
                     for item in dop_okved:
-                        pass
-                        # get_or_create_extra_okved(session=session, data=item, doc=orm_doc)
+                        get_or_create_extra_okved(session=session, data=item, doc=orm_doc)
                 else:
-                    pass
-                    # get_or_create_extra_okved(session=session, data=dop_okved, doc=orm_doc)
+                    get_or_create_extra_okved(session=session, data=dop_okved, doc=orm_doc)
 
-            """
-            Сведения о лицензиях, выданных субъекту МСП
-            """
+            # Сведения о лицензиях, выданных субъекту МСП
             # TODO убрать костыль
             if 'СвЛиценз' in doc and doc['СвЛиценз']:
                 if isinstance(doc['СвЛиценз'], list):
@@ -267,9 +251,7 @@ if __name__ == "__main__":
                 else:
                     get_or_create_license(session=session, data=doc['СвЛиценз'], doc=orm_doc)
 
-            """
-            Сведения о производимой субъектом МСП продукции
-            """
+            # Сведения о производимой субъектом МСП продукции
             # TODO убрать костыль
             if 'СвПрод' in doc and doc['СвПрод']:
                 if isinstance(doc['СвПрод'], list):
@@ -278,9 +260,7 @@ if __name__ == "__main__":
                 else:
                     get_or_create_production(session, data=doc['СвПрод'], doc=orm_doc)
 
-            """
-            Сведения о включении субъекта МСП в реестры программ партнерства
-            """
+            # Сведения о включении субъекта МСП в реестры программ партнерства
             # TODO убрать костыль
             if 'СвПрогПарт' in doc and doc['СвПрогПарт']:
                 if isinstance(doc['СвПрогПарт'], list):
@@ -289,10 +269,8 @@ if __name__ == "__main__":
                 else:
                     get_or_create_partnership(session=session, data=doc['СвПрогПарт'], doc=orm_doc)
 
-            """
-            Сведения о наличии у субъекта МСП в предшествующем календарном году контрактов, заключенных
-            в соответствии с Федеральным законом от 5 апреля 2013 года №44-ФЗ
-            """
+            # Сведения о наличии у субъекта МСП в предшествующем календарном году контрактов, заключенных
+            # в соответствии с Федеральным законом от 5 апреля 2013 года №44-ФЗ
             # TODO убрать костыль
             if 'СвКонтр' in doc and doc['СвКонтр']:
                 if isinstance(doc['СвКонтр'], list):
@@ -301,10 +279,8 @@ if __name__ == "__main__":
                 else:
                     get_or_create_contract(session=session, data=doc['СвКонтр'], doc=orm_doc)
 
-            """
-            Сведения о наличии у субъекта МСП в предшествующем календарном году договоров, заключенных
-            в соответствии с Федеральным законом от 18 июля 2011 года №223-ФЗ
-            """
+            # Сведения о наличии у субъекта МСП в предшествующем календарном году договоров, заключенных
+            # в соответствии с Федеральным законом от 18 июля 2011 года №223-ФЗ
             # TODO убрать костыль
             if 'СвДог' in doc and doc['СвДог']:
                 if isinstance(doc['СвДог'], list):
@@ -319,4 +295,4 @@ if __name__ == "__main__":
         print('end')
         break
 
-    session.commit()
+    # session.commit()

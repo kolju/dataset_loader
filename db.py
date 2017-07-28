@@ -36,7 +36,6 @@ class RSMPDocument(Base):
     """
     Состав и структура документ
     """
-
     __tablename__ = 'rsmp_docs'
 
     id = Column(Integer, primary_key=True)
@@ -48,9 +47,7 @@ class RSMPDocument(Base):
     subj_type = Column(String(1))
     subj_cat = Column(String(1))
     novelity = Column(String(1))
-    """
-    Сведения о месте нахождения юридического лица / месте жительства индивидуального предпринимателя
-    """
+    # Сведения о месте нахождения юридического лица / месте жительства индивидуального предпринимателя
     region_id = Column(Integer, ForeignKey('rsmp_region.id'))
     region = relationship('Region')
     district_id = Column(Integer, ForeignKey('rsmp_district.id'))
@@ -60,6 +57,8 @@ class RSMPDocument(Base):
     locality_id = Column(Integer, ForeignKey('rsmp_locality.id'))
     locality = relationship('Locality')
 
+    main_okved_id = Column(Integer, ForeignKey('rsmp_okved.id'))
+    main_okved = relationship('OKVED', foreign_keys=[main_okved_id])
     # many to many RSMPDocument <-> OKVED
     extra_okved = relationship('OKVED', secondary=extra_okveds, back_populates='docs')
 
@@ -144,7 +143,6 @@ class OKVED(Base):
     """
     Сведения о видах экономической деятельности по Общероссийскому классификатору видов экономической деятельности
     """
-
     __tablename__ = 'rsmp_okved'
 
     id = Column(Integer, primary_key=True)
@@ -163,7 +161,6 @@ class License(Base):
     """
     Сведения о лицензиях, выданных субъекту МСП
     """
-
     __tablename__ = 'rsmp_license'
 
     id = Column(Integer, primary_key=True)
@@ -188,14 +185,12 @@ class Production(Base):
     """
     Сведения о производимой субъектом МСП продукции
     """
-
     __tablename__ = 'rsmp_production'
 
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
     doc = relationship('RSMPDocument')
-
     prod_code = Column(String(18))
     prod_name = Column(String(1000))
     prod_innov = Column(String(1))
@@ -205,14 +200,12 @@ class Partnership(Base):
     """
     Сведения о включении субъекта МСП в реестры программ партнерства
     """
-
     __tablename__ = 'rsmp_partnerships'
 
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
     doc = relationship('RSMPDocument')
-
     partner_name = Column(String(1000))
     partner_inn = Column(String(10))
     partner_contract_num = Column(String(60))
@@ -224,14 +217,12 @@ class Contract(Base):
     Сведения о наличии у субъекта МСП в предшествующем календарном году контрактов, заключенных
     в соответствии с Федеральным законом от 5 апреля 2013 года №44-ФЗ
     """
-
     __tablename__ = 'rsmp_contracts'
 
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
     doc = relationship('RSMPDocument')
-
     contract_client_name = Column(String(1000))
     contract_client_inn = Column(String(10))
     contract_subj = Column(String(1000))
@@ -244,14 +235,12 @@ class Agreement(Base):
     Сведения о наличии у субъекта МСП в предшествующем календарном году договоров, заключенных
     в соответствии с Федеральным законом от 18 июля 2011 года №223-ФЗ
     """
-
     __tablename__ = 'rsmp_agreements'
 
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
     doc = relationship('RSMPDocument')
-
     dog_client_name = Column(String(1000))
     dog_client_inn = Column(String(10))
     dog_subj = Column(String(1000))
