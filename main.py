@@ -243,56 +243,41 @@ if __name__ == "__main__":
                     get_or_create_extra_okved(session=session, data=dop_okved, doc=orm_doc)
 
             # Сведения о лицензиях, выданных субъекту МСП
-            # TODO убрать костыль
             if 'СвЛиценз' in doc and doc['СвЛиценз']:
-                if isinstance(doc['СвЛиценз'], list):
-                    for item in doc['СвЛиценз']:
-                        get_or_create_license(session=session, data=item, doc=orm_doc)
-                else:
-                    get_or_create_license(session=session, data=doc['СвЛиценз'], doc=orm_doc)
+                items = doc['СвЛиценз'] if isinstance(doc['СвЛиценз'], list) else [doc['СвЛиценз']]
+                for item in items:
+                    get_or_create_license(session=session, data=item, doc=orm_doc)
 
             # Сведения о производимой субъектом МСП продукции
-            # TODO убрать костыль
             if 'СвПрод' in doc and doc['СвПрод']:
-                if isinstance(doc['СвПрод'], list):
-                    for item in doc['СвПрод']:
-                        get_or_create_production(session=session, data=item, doc=orm_doc)
-                else:
-                    get_or_create_production(session, data=doc['СвПрод'], doc=orm_doc)
+                items = doc['СвПрод'] if isinstance(doc['СвПрод'], list) else [doc['СвПрод']]
+                for item in items:
+                    get_or_create_production(session=session, data=item, doc=orm_doc)
 
             # Сведения о включении субъекта МСП в реестры программ партнерства
-            # TODO убрать костыль
             if 'СвПрогПарт' in doc and doc['СвПрогПарт']:
-                if isinstance(doc['СвПрогПарт'], list):
-                    for item in doc['СвПрогПарт']:
-                        get_or_create_partnership(session=session, data=item, doc=orm_doc)
-                else:
-                    get_or_create_partnership(session=session, data=doc['СвПрогПарт'], doc=orm_doc)
+                items = doc['СвПрогПарт'] if isinstance(doc['СвПрогПарт'], list) else [doc['СвПрогПарт']]
+                for item in items:
+                    get_or_create_partnership(session=session, data=item, doc=orm_doc)
 
             # Сведения о наличии у субъекта МСП в предшествующем календарном году контрактов, заключенных
             # в соответствии с Федеральным законом от 5 апреля 2013 года №44-ФЗ
-            # TODO убрать костыль
             if 'СвКонтр' in doc and doc['СвКонтр']:
-                if isinstance(doc['СвКонтр'], list):
-                    for item in doc['СвКонтр']:
-                        get_or_create_contract(session=session, data=item, doc=orm_doc)
-                else:
-                    get_or_create_contract(session=session, data=doc['СвКонтр'], doc=orm_doc)
+                items = doc['СвКонтр'] if isinstance(doc['СвКонтр'], list) else [doc['СвКонтр']]
+                for item in items:
+                    get_or_create_contract(session=session, data=item, doc=orm_doc)
 
             # Сведения о наличии у субъекта МСП в предшествующем календарном году договоров, заключенных
             # в соответствии с Федеральным законом от 18 июля 2011 года №223-ФЗ
             # TODO убрать костыль
             if 'СвДог' in doc and doc['СвДог']:
-                if isinstance(doc['СвДог'], list):
-                    for item in doc['СвДог']:
-                        get_or_create_agreement(session=session, data=item, doc=orm_doc)
-                else:
-                    get_or_create_agreement(session=session, data=doc['СвДог'], doc=orm_doc)
+                items = doc['СвДог'] if isinstance(doc['СвДог'], list) else [doc['СвДог']]
+                for item in items:
+                    get_or_create_agreement(session=session, data=item, doc=orm_doc)
 
             session.commit()
 
         xml_file.close()
-        print('end')
         break
 
     # session.commit()
