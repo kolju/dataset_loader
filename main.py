@@ -6,6 +6,7 @@ import zipfile
 
 from bs4 import BeautifulSoup as BS
 from db import *
+from functools import lru_cache
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database, drop_database
@@ -21,8 +22,7 @@ def get_actual_url_and_filename():
     response = urllib.request.urlopen(MAIN_URL)
     soup = BS(response, "html.parser")
     data_url = '^' + MAIN_URL + 'data'
-    urls = soup.findAll('a', attrs={'href': re.compile(data_url)})
-    actual_url = list(map(lambda x: x.get('href'), urls))[0]
+    actual_url = soup.find_all(property="dc:source", content=re.compile(data_url))[0].get('content')
     file_name = actual_url.split('/')[-1]
     return actual_url, file_name
 
@@ -37,6 +37,7 @@ def download_actual_file():
         actual_file.retrieve(actual_url, file_name)
 
 
+@lru_cache(maxsize=None)
 def get_or_create(session, model, **kwargs):
     instance = session.query(model).filter_by(**kwargs).first()
     if not instance:
@@ -63,7 +64,9 @@ def get_or_create_extra_okved(session, data, doc):
 def get_or_create_license(session, data, doc):
     series = data.get('@СерЛиценз', None)
     activity = data.get('НаимЛицВД', None)
+    activity = tuple(activity) if activity else None
     address = data.get('СведАдрЛицВД', None)
+    address = tuple(address) if address else None
     num = data.get('@НомЛиценз', None)
     type = data.get('@ВидЛиценз', None)
     date = date_transform(data.get('ДатаЛиценз', None))
@@ -72,7 +75,6 @@ def get_or_create_license(session, data, doc):
     org_started = data.get('@ОргВыдЛиценз', None)
     stop_date = date_transform(data.get('ДатаОстЛиценз', None))
     org_stoped = data.get('@ОргОстЛиценз', None)
-
     get_or_create(session, License, doc=doc, series=series, activity=activity, address=address, num=num, type=type,
                   date=date, start_date=start_date, end_date=end_date, org_started=org_started, stop_date=stop_date,
                   org_stoped=org_stoped)
@@ -279,3 +281,5 @@ if __name__ == "__main__":
 
         session.commit()
         break
+
+    print(get_or_create.cache_info())

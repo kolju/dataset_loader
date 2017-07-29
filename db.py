@@ -153,6 +153,10 @@ class OKVED(Base):
     # many to many OKVED <-> RSMPDocument
     docs = relationship('RSMPDocument', secondary=extra_okveds, back_populates='extra_okved')
 
+    @property
+    def cached_okved(self):
+        return OKVED.cache.filter(user_id=self.id)
+
 
 class License(Base):
     """
