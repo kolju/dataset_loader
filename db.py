@@ -10,6 +10,15 @@ extra_okveds = Table('extra_okveds', Base.metadata,
                      Column('okved_id', ForeignKey('rsmp_okved.id'), primary_key=True))
 
 
+class File(Base):
+    """
+    hfhfh
+    """
+    __tablename__ = 'file'
+    id = Column(Integer, primary_key=True)
+    url = Column(String(255))
+
+
 class RSMPFile(Base):
     """
     Сведения о файле и отправителе
