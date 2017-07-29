@@ -34,7 +34,7 @@ class RSMPFile(Base):
 
 class RSMPDocument(Base):
     """
-    Состав и структура документ
+    Состав и структура документа
     """
     __tablename__ = 'rsmp_docs'
 
@@ -67,7 +67,7 @@ class Business(Base):
     """
     Сведения о юридическом лице, включенном в реестр МСП
     """
-    __tablename__ = 'rsmp_legal_entities'
+    __tablename__ = 'rsmp_businesses'
 
     id = Column(Integer, primary_key=True)
 
