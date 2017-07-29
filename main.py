@@ -80,11 +80,11 @@ if __name__ == "__main__":
         sender_surname = file_content.get('ИдОтпр', {}).get('ФИООтв', {}).get('@Фамилия', None)
         sender_middlename = file_content.get('ИдОтпр', {}).get('ФИООтв', {}).get('@Отчество', None)
 
-        orm_file = _create(session, RSMPFile, file_id=file_id, file_format_ver=file_format_ver,
-                           info_type=info_type, program_ver=program_ver, docs_count=docs_count,
-                           sender_name=sender_name, sender_surname=sender_surname,
-                           sender_middlename=sender_middlename, sender_position=sender_position,
-                           sender_tel=sender_tel, sender_email=sender_email)
+        orm_file = create_orm_object(session, RSMPFile, file_id=file_id, file_format_ver=file_format_ver,
+                                     info_type=info_type, program_ver=program_ver, docs_count=docs_count,
+                                     sender_name=sender_name, sender_surname=sender_surname,
+                                     sender_middlename=sender_middlename, sender_position=sender_position,
+                                     sender_tel=sender_tel, sender_email=sender_email)
 
         for doc in file_content['Документ']:
             # Состав и структура документа
@@ -95,9 +95,8 @@ if __name__ == "__main__":
             subj_cat = doc.get('@КатСубМСП', None)
             novelty = doc.get('@ПризНовМСП', None)
 
-            orm_doc = _create(session, RSMPDocument, file=orm_file, doc_id=doc_id,
-                              create_date=create_date, input_date=input_date, subj_type=subj_type,
-                              subj_cat=subj_cat, novelty=novelty)
+            orm_doc = create_orm_object(session, RSMPDocument, file=orm_file, doc_id=doc_id, create_date=create_date,
+                                        input_date=input_date, subj_type=subj_type, subj_cat=subj_cat, novelty=novelty)
 
             if 'ОргВклМСП' in doc and doc['ОргВклМСП']:
                 info = doc['ОргВклМСП']
@@ -105,7 +104,7 @@ if __name__ == "__main__":
                 short_name = info.get('НаимОргСокр', None)
                 inn = info.get('@ИННЮЛ', None)
 
-                _create(session, Business, doc=orm_doc, full_name=full_name, short_name=short_name, inn=inn)
+                create_orm_object(session, Business, doc=orm_doc, full_name=full_name, short_name=short_name, inn=inn)
 
             if 'ИПВклМСП' in doc and doc['ИПВклМСП']:
                 info = doc['ИПВклМСП']
@@ -114,8 +113,8 @@ if __name__ == "__main__":
                 surname = info.get('ФИОИП', {}).get('@Фамилия', None)
                 middlename = info.get('ФИОИП', {}).get('@Отчество', None)
 
-                _create(session, IndividualEnterpeneur, doc=orm_doc, name=name, surname=surname,
-                        middlename=middlename, inn=inn)
+                create_orm_object(session, IndividualEnterpeneur, doc=orm_doc, name=name, surname=surname,
+                                  middlename=middlename, inn=inn)
 
             if 'СведМН' in doc and doc['СведМН']:
                 location = doc['СведМН']
@@ -123,25 +122,25 @@ if __name__ == "__main__":
                 region_type = location.get('Регион', {}).get('@Тип', None)
                 region_name = location.get('Регион', {}).get('@Наим', None)
                 if region or region_name or region_type:
-                    region = _create(session, Region, region=region, type=region_type, name=region_name)
+                    region = create_orm_object(session, Region, region=region, type=region_type, name=region_name)
                     orm_doc.region = region
 
                 district_type = location.get('Район', {}).get('@Тип', None)
                 district_name = location.get('Район', {}).get('@Наим', None)
                 if district_type or district_name:
-                    district = _create(session, District, type=district_type, name=district_name)
+                    district = create_orm_object(session, District, type=district_type, name=district_name)
                     orm_doc.district = district
 
                 city_type = location.get('Город', {}).get('@Тип', None)
                 city_name = location.get('Город', {}).get('@Наим', None)
                 if city_type or city_name:
-                    city = _create(session, City, type=city_type, name=city_name)
+                    city = create_orm_object(session, City, type=city_type, name=city_name)
                     orm_doc.city = city
 
                 locality_type = location.get('НаселПункт', {}).get('@Тип', None)
                 locality_name = location.get('НаселПункт', {}).get('@Наим', None)
                 if locality_type or locality_name:
-                    locality = _create(session, Locality, type=locality_type, name=locality_name)
+                    locality = create_orm_object(session, Locality, type=locality_type, name=locality_name)
                     orm_doc.locality = locality
 
             if 'СвОКВЭД' in doc and doc['СвОКВЭД']:
@@ -151,7 +150,7 @@ if __name__ == "__main__":
                 main_ver = okved.get('СвОКВЭДОсн', {}).get('@ВерсОКВЭД', None)
 
                 if main_code or main_name or main_ver:
-                    main_okved = _create(session, OKVED, code=main_code, name=main_name, ver=main_ver)
+                    main_okved = create_orm_object(session, OKVED, code=main_code, name=main_name, ver=main_ver)
                     orm_doc.main_okved = main_okved
 
                 if 'СвОКВЭДДоп' in okved and okved['СвОКВЭДДоп']:
@@ -194,4 +193,4 @@ if __name__ == "__main__":
         if DEBUG:
             break
 
-    print(_create.cache_info())
+    print(create_orm_object.cache_info())

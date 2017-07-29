@@ -11,7 +11,7 @@ def date_transform(str_date):
 
 
 @lru_cache(maxsize=None)
-def _create(session, model, **kwargs):
+def create_orm_object(session, model, **kwargs):
     instance = model(**kwargs)
     session.add(instance)
     return instance
@@ -21,7 +21,7 @@ def get_or_create_extra_okved(session, data, doc):
     code = data.get('@КодОКВЭД', None)
     name = data.get('@НаимОКВЭД', None)
     ver = data.get('@ВерсОКВЭД', None)
-    extra_okved = _create(session, OKVED, code=code, name=name, ver=ver)
+    extra_okved = create_orm_object(session, OKVED, code=code, name=name, ver=ver)
     extra_okved.docs.append(doc)
 
 
@@ -39,9 +39,9 @@ def get_or_create_license(session, data, doc):
     org_started = data.get('@ОргВыдЛиценз', None)
     stop_date = date_transform(data.get('ДатаОстЛиценз', None))
     org_stoped = data.get('@ОргОстЛиценз', None)
-    _create(session, License, doc=doc, series=series, activity=activity, address=address, num=num, type=type,
-            date=date, start_date=start_date, end_date=end_date, org_started=org_started, stop_date=stop_date,
-            org_stoped=org_stoped)
+    create_orm_object(session, License, doc=doc, series=series, activity=activity, address=address, num=num, type=type,
+                      date=date, start_date=start_date, end_date=end_date, org_started=org_started, stop_date=stop_date,
+                      org_stoped=org_stoped)
 
 
 def get_or_create_production(session, data, doc):
@@ -49,7 +49,7 @@ def get_or_create_production(session, data, doc):
     name = data.get('@НаимПрод', None)
     innov = data.get('@ПрОтнПрод', None)
 
-    _create(session, Production, doc=doc, code=code, name=name, innov=innov)
+    create_orm_object(session, Production, doc=doc, code=code, name=name, innov=innov)
 
 
 def get_or_create_partnership(session, data, doc):
@@ -58,8 +58,8 @@ def get_or_create_partnership(session, data, doc):
     contract_num = data.get('@НомДог', None)
     contract_date = date_transform(data.get('@ДатаДог', None))
 
-    _create(session, Partnership, doc=doc, name=name, inn=inn, contract_num=contract_num,
-            contract_date=contract_date)
+    create_orm_object(session, Partnership, doc=doc, name=name, inn=inn, contract_num=contract_num,
+                      contract_date=contract_date)
 
 
 def get_or_create_contract(session, data, doc):
@@ -69,8 +69,8 @@ def get_or_create_contract(session, data, doc):
     num = data.get('@НомКонтрРеестр', None)
     date = date_transform(data.get('@ДатаКонтр', None))
 
-    _create(session, Contract, doc=doc, client_name=client_name, client_inn=client_inn, subj=subj, num=num,
-            date=date)
+    create_orm_object(session, Contract, doc=doc, client_name=client_name, client_inn=client_inn, subj=subj, num=num,
+                      date=date)
 
 
 def get_or_create_agreement(session, data, doc):
@@ -80,5 +80,5 @@ def get_or_create_agreement(session, data, doc):
     num = data.get('@НомДогРеестр', None)
     date = date_transform(data.get('@ДатаДог', None))
 
-    _create(session, Agreement, doc=doc, client_name=client_name, client_inn=client_inn, subj=subj, num=num,
-            date=date)
+    create_orm_object(session, Agreement, doc=doc, client_name=client_name, client_inn=client_inn, subj=subj, num=num,
+                      date=date)
