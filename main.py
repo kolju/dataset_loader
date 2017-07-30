@@ -60,7 +60,7 @@ if __name__ == "__main__":
         download_actual_file(actual_url, file_name)
         print('Актуальный файл скачан')
 
-        zip_file = zipfile.ZipFile(file_name)
+        zip_file = zipfile.ZipFile(get_file_path(file_name))
         for name in tqdm(zip_file.namelist()):
             with zip_file.open(name) as xml_file:
                 dict_data = xmltodict.parse(xml_file)

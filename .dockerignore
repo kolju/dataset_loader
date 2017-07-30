@@ -4,4 +4,3 @@
 *.pyc
 docker-compose.yml
 data/
-!data/data-11062017-structure-08012016.zip
