@@ -1,9 +1,11 @@
 import urllib.request
+
+import os
 import xmltodict
 import zipfile
 
 from bs4 import BeautifulSoup as BS
-from db import (Base, File, RSMPFile, RSMPDocument, Business, IndividualEnterpeneur, Region, District, City, Locality,
+from db import (Base, ZipFile, File, Document, Business, IndividualEnterpeneur, Region, District, City, Locality,
                 OKVED)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -13,7 +15,10 @@ from utils import (create_orm_object, date_transform, create_extra_okved, create
                    create_partnership, create_contract, create_agreement)
 
 MAIN_URL = 'https://www.nalog.ru/opendata/7707329152-rsmp/'
-DEBUG = True
+
+
+def get_file_path(file_name):
+    return './data/{}'.format(file_name)
 
 
 def get_actual_url_and_filename():
@@ -32,30 +37,28 @@ def download_actual_file(actual_url, file_name):
     Скачивание актуального файла
     """
     actual_file = urllib.request.URLopener()
-    actual_file.retrieve(actual_url, file_name)
+    actual_file.retrieve(actual_url, get_file_path(file_name))
 
 
 if __name__ == "__main__":
     actual_url, file_name = get_actual_url_and_filename()
 
-    # TODO mysql instead localhost
-    engine = create_engine('mysql://root:qwerty12345@localhost/rsmp?charset=utf8', echo=False)
+    engine = create_engine('mysql://root:qwerty12345@mysql/rsmp?charset=utf8')
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    if not DEBUG and (database_exists(engine.url) and actual_url == str(session.query(File).first().url)):
+    orm_zip_file = session.query(ZipFile).first() if database_exists(engine.url) else None
+    if orm_zip_file and orm_zip_file.url == actual_url:
         print('Информация в БД актуальна')
     else:
-        if DEBUG and database_exists(engine.url):
+        if database_exists(engine.url):
             drop_database(engine.url)
         create_database(engine.url)
         Base.metadata.create_all(engine)
-        create_orm_object(session, File, url=actual_url)
 
-        if DEBUG:
-            file_name = './data/data-11062017-structure-08012016.zip'
-        else:
-            download_actual_file(actual_url, file_name)
+        print('Запущен процесс скачивания файла...')
+        download_actual_file(actual_url, file_name)
+        print('Актуальный файл скачан')
 
         zip_file = zipfile.ZipFile(file_name)
         for name in tqdm(zip_file.namelist()):
@@ -78,7 +81,7 @@ if __name__ == "__main__":
             sender_surname = file_content.get('ИдОтпр', {}).get('ФИООтв', {}).get('@Фамилия', None)
             sender_middlename = file_content.get('ИдОтпр', {}).get('ФИООтв', {}).get('@Отчество', None)
 
-            orm_file = create_orm_object(session, RSMPFile, file_id=file_id, file_format_ver=file_format_ver,
+            orm_file = create_orm_object(session, File, file_id=file_id, file_format_ver=file_format_ver,
                                          info_type=info_type, program_ver=program_ver, docs_count=docs_count,
                                          sender_name=sender_name, sender_surname=sender_surname,
                                          sender_middlename=sender_middlename, sender_position=sender_position,
@@ -93,7 +96,7 @@ if __name__ == "__main__":
                 subj_cat = doc.get('@КатСубМСП', None)
                 novelty = doc.get('@ПризНовМСП', None)
 
-                orm_doc = create_orm_object(session, RSMPDocument, file=orm_file, doc_id=doc_id,
+                orm_doc = create_orm_object(session, Document, file=orm_file, doc_id=doc_id,
                                             create_date=create_date, input_date=input_date, subj_type=subj_type,
                                             subj_cat=subj_cat, novelty=novelty)
 
@@ -197,5 +200,6 @@ if __name__ == "__main__":
                         agr.doc = orm_doc
 
             session.commit()
-            # if DEBUG:
-            #     break
+        create_orm_object(session, ZipFile, url=actual_url)
+        session.commit()
+        os.remove(get_file_path(file_name))
