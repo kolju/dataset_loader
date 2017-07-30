@@ -49,7 +49,7 @@ class RSMPDocument(Base):
 
     id = Column(Integer, primary_key=True)
     file_id = Column(Integer, ForeignKey('rsmp_files.id'))
-    file = relationship('RSMPFile')
+    file = relationship('RSMPFile', backref="docs")
     doc_id = Column(String(36))
     create_date = Column(Date)
     input_date = Column(Date)
@@ -58,18 +58,18 @@ class RSMPDocument(Base):
     novelty = Column(String(1))
     # Сведения о месте нахождения юридического лица / месте жительства индивидуального предпринимателя
     region_id = Column(Integer, ForeignKey('rsmp_region.id'))
-    region = relationship('Region')
+    region = relationship('Region', backref="docs")
     district_id = Column(Integer, ForeignKey('rsmp_district.id'))
-    district = relationship('District')
+    district = relationship('District', backref="docs")
     city_id = Column(Integer, ForeignKey('rsmp_city.id'))
-    city = relationship('City')
+    city = relationship('City', backref="docs")
     locality_id = Column(Integer, ForeignKey('rsmp_locality.id'))
-    locality = relationship('Locality')
+    locality = relationship('Locality', backref="docs")
 
     main_okved_id = Column(Integer, ForeignKey('rsmp_okved.id'))
-    main_okved = relationship('OKVED', foreign_keys=[main_okved_id])
+    main_okved = relationship('OKVED', foreign_keys=[main_okved_id], backref="main_okved_docs")
     # many to many RSMPDocument <-> OKVED
-    extra_okved = relationship('OKVED', secondary=extra_okveds, back_populates='docs')
+    extra_okveds = relationship('OKVED', secondary=extra_okveds, backref='extra_okved_docs')
 
 
 class Business(Base):
@@ -81,7 +81,7 @@ class Business(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
-    doc = relationship('RSMPDocument')
+    doc = relationship('RSMPDocument', backref="businesses")
     full_name = Column(String(1000))
     short_name = Column(String(500))
     inn = Column(String(10))
@@ -96,7 +96,7 @@ class IndividualEnterpeneur(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
-    doc = relationship('RSMPDocument')
+    doc = relationship('RSMPDocument', backref="ies")
     name = Column(String(60))
     surname = Column(String(60))
     middlename = Column(String(60))
@@ -159,12 +159,6 @@ class OKVED(Base):
     code = Column(String(8))
     name = Column(String(1000))
     ver = Column(String(4))
-    # many to many OKVED <-> RSMPDocument
-    docs = relationship('RSMPDocument', secondary=extra_okveds, back_populates='extra_okved')
-
-    @property
-    def cached_okved(self):
-        return OKVED.cache.filter(user_id=self.id)
 
 
 class License(Base):
@@ -176,7 +170,7 @@ class License(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
-    doc = relationship('RSMPDocument')
+    doc = relationship('RSMPDocument', backref='licenses')
     series = Column(String(10))
     activity = Column(JSON)
     address = Column(JSON)
@@ -199,7 +193,7 @@ class Production(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
-    doc = relationship('RSMPDocument')
+    doc = relationship('RSMPDocument', backref="productions")
     code = Column(String(18))
     name = Column(String(1000))
     innov = Column(String(1))
@@ -214,7 +208,7 @@ class Partnership(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
-    doc = relationship('RSMPDocument')
+    doc = relationship('RSMPDocument', backref="partnerships")
     name = Column(String(1000))
     inn = Column(String(10))
     contract_num = Column(String(60))
@@ -231,7 +225,7 @@ class Contract(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
-    doc = relationship('RSMPDocument')
+    doc = relationship('RSMPDocument', backref="contracts")
     client_name = Column(String(1000))
     client_inn = Column(String(10))
     subj = Column(String(1000))
@@ -249,7 +243,7 @@ class Agreement(Base):
     id = Column(Integer, primary_key=True)
 
     doc_id = Column(Integer, ForeignKey('rsmp_docs.id'))
-    doc = relationship('RSMPDocument')
+    doc = relationship('RSMPDocument', backref="agreements")
     client_name = Column(String(1000))
     client_inn = Column(String(10))
     subj = Column(String(1000))

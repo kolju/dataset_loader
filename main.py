@@ -10,8 +10,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database, drop_database
 from tqdm import tqdm
-from utils import (create_orm_object, date_transform, get_or_create_extra_okved, get_or_create_license,
-                   get_or_create_production, get_or_create_partnership, get_or_create_contract, get_or_create_agreement)
+from utils import (create_orm_object, date_transform, create_extra_okved, create_license, create_production,
+                   create_partnership, create_contract, create_agreement)
 
 MAIN_URL = 'https://www.nalog.ru/opendata/7707329152-rsmp/'
 DEBUG = True
@@ -40,7 +40,8 @@ def download_actual_file(actual_url, file_name):
 if __name__ == "__main__":
     actual_url, file_name = get_actual_url_and_filename()
 
-    engine = create_engine('mysql://root:qwerty12345@localhost/rsmp?charset=cp1251&use_unicode=0')
+    # TODO mysql instead localhost
+    engine = create_engine('mysql://root:qwerty12345@localhost/rsmp?charset=utf8', echo=False)
     Session = sessionmaker(bind=engine)
     session = Session()
 
@@ -95,9 +96,8 @@ if __name__ == "__main__":
                 novelty = doc.get('@ПризНовМСП', None)
 
                 orm_doc = create_orm_object(session, RSMPDocument, file=orm_file, doc_id=doc_id,
-                                            create_date=create_date,
-                                            input_date=input_date, subj_type=subj_type, subj_cat=subj_cat,
-                                            novelty=novelty)
+                                            create_date=create_date, input_date=input_date, subj_type=subj_type,
+                                            subj_cat=subj_cat, novelty=novelty)
 
                 if 'ОргВклМСП' in doc and doc['ОргВклМСП']:
                     info = doc['ОргВклМСП']
@@ -160,42 +160,42 @@ if __name__ == "__main__":
                         extra_okveds = okved['СвОКВЭДДоп']
                         extra_okveds = extra_okveds if isinstance(extra_okveds, list) else [extra_okveds]
                         for extra_okved in extra_okveds:
-                            okved = get_or_create_extra_okved(session=session, data=extra_okved)
-                            okved.docs.append(orm_doc)
+                            okved = create_extra_okved(session=session, data=extra_okved)
+                            orm_doc.extra_okveds.append(okved)
 
                 if 'СвЛиценз' in doc and doc['СвЛиценз']:
                     licenses = doc['СвЛиценз']
                     licenses = licenses if isinstance(licenses, list) else [licenses]
                     for license in licenses:
-                        lic = get_or_create_license(session=session, data=license)
+                        lic = create_license(session=session, data=license)
                         lic.doc = orm_doc
 
                 if 'СвПрод' in doc and doc['СвПрод']:
                     products = doc['СвПрод']
                     items = products if isinstance(products, list) else [products]
                     for item in items:
-                        prod = get_or_create_production(session=session, data=item)
+                        prod = create_production(session=session, data=item)
                         prod.doc = orm_doc
 
                 if 'СвПрогПарт' in doc and doc['СвПрогПарт']:
                     partnerships = doc['СвПрогПарт']
                     partnerships = partnerships if isinstance(partnerships, list) else [partnerships]
                     for partnership in partnerships:
-                        pship = get_or_create_partnership(session=session, data=partnership)
+                        pship = create_partnership(session=session, data=partnership)
                         pship.doc = orm_doc
 
                 if 'СвКонтр' in doc and doc['СвКонтр']:
                     contracts = doc['СвКонтр']
                     contracts = contracts if isinstance(contracts, list) else [contracts]
                     for contract in contracts:
-                        contr = get_or_create_contract(session=session, data=contract)
+                        contr = create_contract(session=session, data=contract)
                         contr.doc = orm_doc
 
                 if 'СвДог' in doc and doc['СвДог']:
                     agreements = doc['СвДог']
                     agreements = agreements if isinstance(agreements, list) else [agreements]
                     for agreement in agreements:
-                        agr = get_or_create_agreement(session=session, data=agreement)
+                        agr = create_agreement(session=session, data=agreement)
                         agr.doc = orm_doc
 
             session.commit()

@@ -1,5 +1,5 @@
 import datetime
-from functools import lru_cache
+from functools import lru_cache, wraps
 
 from db import OKVED, License, Production, Partnership, Contract, Agreement
 
@@ -11,6 +11,15 @@ def date_transform(str_date):
         return datetime.datetime.strptime(str_date, '%d.%m.%Y')
 
 
+def lower_str_params(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        kwargs = {k: v.lower() if isinstance(v, str) else v for k, v in kwargs.items()}
+        return func(*args, **kwargs)
+    return wrapper
+
+
+@lower_str_params
 @lru_cache(maxsize=None)
 def create_orm_object(session, model, **kwargs):
     instance = model(**kwargs)
@@ -18,7 +27,7 @@ def create_orm_object(session, model, **kwargs):
     return instance
 
 
-def get_or_create_extra_okved(session, data):
+def create_extra_okved(session, data):
     code = data.get('@КодОКВЭД', None)
     name = data.get('@НаимОКВЭД', None)
     ver = data.get('@ВерсОКВЭД', None)
@@ -26,12 +35,14 @@ def get_or_create_extra_okved(session, data):
     return extra_okved
 
 
-def get_or_create_license(session, data):
+def create_license(session, data):
     series = data.get('@СерЛиценз', None)
     activity = data.get('НаимЛицВД', None)
-    activity = tuple(activity) if activity else None
+    if isinstance(activity, list):
+        activity = tuple(activity)
     address = data.get('СведАдрЛицВД', None)
-    address = tuple(address) if address else None
+    if isinstance(address, list):
+        address = tuple(address)
     num = data.get('@НомЛиценз', None)
     type = data.get('@ВидЛиценз', None)
     date = date_transform(data.get('ДатаЛиценз', None))
@@ -46,7 +57,7 @@ def get_or_create_license(session, data):
     return lic
 
 
-def get_or_create_production(session, data):
+def create_production(session, data):
     code = data.get('@КодПрод', None)
     name = data.get('@НаимПрод', None)
     innov = data.get('@ПрОтнПрод', None)
@@ -54,7 +65,7 @@ def get_or_create_production(session, data):
     return prod
 
 
-def get_or_create_partnership(session, data):
+def create_partnership(session, data):
     name = data.get('@НаимЮЛ_ПП', None)
     inn = data.get('@ИННЮЛ_ПП', None)
     contract_num = data.get('@НомДог', None)
@@ -64,7 +75,7 @@ def get_or_create_partnership(session, data):
     return pship
 
 
-def get_or_create_contract(session, data):
+def create_contract(session, data):
     client_name = data.get('@НаимЮЛ_ЗК', None)
     client_inn = data.get('@ИННЮЛ_ЗК', None)
     subj = data.get('@ПредмКонтр', None)
@@ -75,7 +86,7 @@ def get_or_create_contract(session, data):
     return contr
 
 
-def get_or_create_agreement(session, data):
+def create_agreement(session, data):
     client_name = data.get('@НаимЮЛ_ЗД', None)
     client_inn = data.get('@ИННЮЛ_ЗД', None)
     subj = data.get('@ПредмДог', None)
