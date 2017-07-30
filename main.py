@@ -1,4 +1,3 @@
-import re
 import urllib.request
 import xmltodict
 import zipfile
@@ -54,7 +53,7 @@ if __name__ == "__main__":
         create_orm_object(session, File, url=actual_url)
 
         if DEBUG:
-            file_name = 'data-11062017-structure-08012016.zip'
+            file_name = './data/data-11062017-structure-08012016.zip'
         else:
             download_actual_file(actual_url, file_name)
 
