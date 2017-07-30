@@ -23,8 +23,7 @@ def get_actual_url_and_filename():
     """
     response = urllib.request.urlopen(MAIN_URL)
     soup = BS(response, "html.parser")
-    data_url = '^' + MAIN_URL + 'data'
-    actual_url = soup.find_all(property="dc:source", content=re.compile(data_url))[0].get('content')
+    actual_url = soup.find('div', resource="#data-1").find('div', property="dc:source")['content']
     file_name = actual_url.split('/')[-1]
     return actual_url, file_name
 
