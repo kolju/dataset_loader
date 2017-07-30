@@ -4,10 +4,14 @@ import xmltodict
 import zipfile
 
 from bs4 import BeautifulSoup as BS
+from db import (Base, File, RSMPFile, RSMPDocument, Business, IndividualEnterpeneur, Region, District, City, Locality,
+                OKVED)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database, drop_database
-from utils import *
+from tqdm import tqdm
+from utils import (create_orm_object, date_transform, get_or_create_extra_okved, get_or_create_license,
+                   get_or_create_production, get_or_create_partnership, get_or_create_contract, get_or_create_agreement)
 
 MAIN_URL = 'https://www.nalog.ru/opendata/7707329152-rsmp/'
 DEBUG = True
@@ -55,7 +59,7 @@ if __name__ == "__main__":
             download_actual_file(actual_url, file_name)
 
         zip_file = zipfile.ZipFile(file_name)
-        for name in zip_file.namelist():
+        for name in tqdm(zip_file.namelist()):
             with zip_file.open(name) as xml_file:
                 dict_data = xmltodict.parse(xml_file)
             file_content = dict_data['Файл']
@@ -90,8 +94,10 @@ if __name__ == "__main__":
                 subj_cat = doc.get('@КатСубМСП', None)
                 novelty = doc.get('@ПризНовМСП', None)
 
-                orm_doc = create_orm_object(session, RSMPDocument, file=orm_file, doc_id=doc_id, create_date=create_date,
-                                            input_date=input_date, subj_type=subj_type, subj_cat=subj_cat, novelty=novelty)
+                orm_doc = create_orm_object(session, RSMPDocument, file=orm_file, doc_id=doc_id,
+                                            create_date=create_date,
+                                            input_date=input_date, subj_type=subj_type, subj_cat=subj_cat,
+                                            novelty=novelty)
 
                 if 'ОргВклМСП' in doc and doc['ОргВклМСП']:
                     info = doc['ОргВклМСП']
@@ -99,7 +105,8 @@ if __name__ == "__main__":
                     short_name = info.get('НаимОргСокр', None)
                     inn = info.get('@ИННЮЛ', None)
 
-                    create_orm_object(session, Business, doc=orm_doc, full_name=full_name, short_name=short_name, inn=inn)
+                    business = create_orm_object(session, Business, full_name=full_name, short_name=short_name, inn=inn)
+                    business.doc = orm_doc
 
                 if 'ИПВклМСП' in doc and doc['ИПВклМСП']:
                     info = doc['ИПВклМСП']
@@ -108,8 +115,9 @@ if __name__ == "__main__":
                     surname = info.get('ФИОИП', {}).get('@Фамилия', None)
                     middlename = info.get('ФИОИП', {}).get('@Отчество', None)
 
-                    create_orm_object(session, IndividualEnterpeneur, doc=orm_doc, name=name, surname=surname,
-                                      middlename=middlename, inn=inn)
+                    ip = create_orm_object(session, IndividualEnterpeneur, name=name, surname=surname,
+                                           middlename=middlename, inn=inn)
+                    ip.doc = orm_doc
 
                 if 'СведМН' in doc and doc['СведМН']:
                     location = doc['СведМН']
@@ -152,38 +160,44 @@ if __name__ == "__main__":
                         extra_okveds = okved['СвОКВЭДДоп']
                         extra_okveds = extra_okveds if isinstance(extra_okveds, list) else [extra_okveds]
                         for extra_okved in extra_okveds:
-                            get_or_create_extra_okved(session=session, data=extra_okved, doc=orm_doc)
+                            okved = get_or_create_extra_okved(session=session, data=extra_okved)
+                            okved.docs.append(orm_doc)
 
                 if 'СвЛиценз' in doc and doc['СвЛиценз']:
                     licenses = doc['СвЛиценз']
                     licenses = licenses if isinstance(licenses, list) else [licenses]
                     for license in licenses:
-                        get_or_create_license(session=session, data=license, doc=orm_doc)
+                        lic = get_or_create_license(session=session, data=license)
+                        lic.doc = orm_doc
 
                 if 'СвПрод' in doc and doc['СвПрод']:
                     products = doc['СвПрод']
                     items = products if isinstance(products, list) else [products]
                     for item in items:
-                        get_or_create_production(session=session, data=item, doc=orm_doc)
+                        prod = get_or_create_production(session=session, data=item)
+                        prod.doc = orm_doc
 
                 if 'СвПрогПарт' in doc and doc['СвПрогПарт']:
                     partnerships = doc['СвПрогПарт']
                     partnerships = partnerships if isinstance(partnerships, list) else [partnerships]
                     for partnership in partnerships:
-                        get_or_create_partnership(session=session, data=partnership, doc=orm_doc)
+                        pship = get_or_create_partnership(session=session, data=partnership)
+                        pship.doc = orm_doc
 
                 if 'СвКонтр' in doc and doc['СвКонтр']:
                     contracts = doc['СвКонтр']
                     contracts = contracts if isinstance(contracts, list) else [contracts]
                     for contract in contracts:
-                        get_or_create_contract(session=session, data=contract, doc=orm_doc)
+                        contr = get_or_create_contract(session=session, data=contract)
+                        contr.doc = orm_doc
 
                 if 'СвДог' in doc and doc['СвДог']:
                     agreements = doc['СвДог']
                     agreements = agreements if isinstance(agreements, list) else [agreements]
                     for agreement in agreements:
-                        get_or_create_agreement(session=session, data=agreement, doc=orm_doc)
+                        agr = get_or_create_agreement(session=session, data=agreement)
+                        agr.doc = orm_doc
 
             session.commit()
-            if DEBUG:
-                break
+            # if DEBUG:
+            #     break
