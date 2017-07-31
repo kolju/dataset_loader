@@ -24,3 +24,18 @@ docker-compose start app
 https://www.nalog.ru/opendata/7707329152-rsmp/
 
 Search and download actual register, wrighting to the database.
+ 
+Notes:
+
+1. The file is not downloaded in case of actual information in database.
+2. There are no required fields in solution, because of xml files don't match the described xsd structure.
+For the same reason enumerated values are stored as a string.
+3. Commands to run docker-container, file download, write info in database and delete downloaded file in the end:
+```bash
+docker-compose build
+docker-compose up
+```
+Database refreshing:
+```bash
+docker-compose start app
+```
