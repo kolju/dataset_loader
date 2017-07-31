@@ -23,7 +23,7 @@ docker-compose start app
 
 https://www.nalog.ru/opendata/7707329152-rsmp/
 
-Search and download actual register, wrighting to the database.
+Search and download actual register, write to the database.
  
 Notes:
 
